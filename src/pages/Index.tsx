@@ -23,10 +23,10 @@ const Index = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h2 className="text-xl font-bold text-foreground">
-                नमस्ते, राजेश जी! 🙏
+                Welcome back, Rajesh!
               </h2>
               <p className="text-muted-foreground mt-1">
-                आज का व्यापार शुभ हो। Your store is performing 12% better than last week.
+                Your store is performing 12% better than last week. Keep up the great work!
               </p>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -86,8 +86,8 @@ const Index = () => {
         {/* Footer */}
         <footer className="text-center py-6 text-sm text-muted-foreground border-t border-border">
           <p>
-            karVyapaar - आपके व्यापार का डिजिटल साथी | Works offline • 
-            Supports Hindi voice input • Built for Bharat 🇮🇳
+            karVyapaar - Your Digital Business Partner | Works offline • 
+            Supports voice input • Built for India
           </p>
         </footer>
       </main>

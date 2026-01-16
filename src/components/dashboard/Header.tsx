@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Store, Bell, Settings, User, Sparkles, Menu } from "lucide-react";
 import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { label: "Dashboard", href: "#", active: true },
-  { label: "Billing", href: "#" },
+  { label: "Dashboard", href: "/" },
+  { label: "Billing", href: "/billing" },
   { label: "Inventory", href: "#" },
   { label: "Reports", href: "#" },
   { label: "Compliance", href: "#" },
@@ -13,13 +14,14 @@ const navItems = [
 
 export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <header className="sticky top-0 z-50 bg-card border-b border-border">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3">
             <div className="p-2 bg-primary rounded-lg">
               <Store className="h-5 w-5 text-primary-foreground" />
             </div>
@@ -29,24 +31,27 @@ export const Header = () => {
                 Smart Business Management
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium rounded-lg transition-colors",
-                  item.active
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}
-              >
-                {item.label}
-              </a>
-            ))}
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  className={cn(
+                    "px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+                    isActive
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Actions */}
@@ -78,20 +83,24 @@ export const Header = () => {
         {mobileMenuOpen && (
           <nav className="md:hidden py-4 border-t border-border">
             <div className="flex flex-col gap-1">
-              {navItems.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className={cn(
-                    "px-4 py-2 text-sm font-medium rounded-lg transition-colors",
-                    item.active
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  )}
-                >
-                  {item.label}
-                </a>
-              ))}
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.href;
+                return (
+                  <Link
+                    key={item.label}
+                    to={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+                      isActive
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
             </div>
           </nav>
         )}
