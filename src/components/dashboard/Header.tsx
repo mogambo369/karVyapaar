@@ -9,7 +9,7 @@ const navItems = [
   { label: "Billing", href: "/billing" },
   { label: "Inventory", href: "#" },
   { label: "Reports", href: "/reports" },
-  { label: "Compliance", href: "#" },
+  { label: "Compliance", href: "/compliance" },
 ];
 
 export const Header = () => {
