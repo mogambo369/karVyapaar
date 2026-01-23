@@ -12,14 +12,14 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Invoice } from "./Invoice";
 import { CartItem } from "./Cart";
-import { CreditCard, Wallet, Banknote, Printer, Check, Send } from "lucide-react";
+import { CreditCard, Wallet, Banknote, Printer, Check, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface PaymentModalProps {
   open: boolean;
   onClose: () => void;
   items: CartItem[];
-  onComplete: () => void;
+  onComplete: (paymentMethod: string, customerName?: string, customerPhone?: string) => Promise<void>;
 }
 
 const paymentMethods = [
@@ -38,6 +38,7 @@ export const PaymentModal = ({
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -59,15 +60,26 @@ export const PaymentModal = ({
     setStep("invoice");
   };
 
-  const handleComplete = () => {
-    toast.success("Payment completed successfully!", {
-      description: `Invoice ${invoiceNumber} generated`,
-    });
-    onComplete();
-    setStep("details");
-    setCustomerName("");
-    setCustomerPhone("");
-    setPaymentMethod("cash");
+  const handleComplete = async () => {
+    setIsProcessing(true);
+    try {
+      await onComplete(
+        paymentMethod,
+        customerName || undefined,
+        customerPhone || undefined
+      );
+      toast.success("Payment completed successfully!", {
+        description: `Invoice ${invoiceNumber} generated`,
+      });
+      setStep("details");
+      setCustomerName("");
+      setCustomerPhone("");
+      setPaymentMethod("cash");
+    } catch (error) {
+      // Error handled by parent
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleSendWhatsApp = () => {
@@ -81,8 +93,15 @@ export const PaymentModal = ({
     }
   };
 
+  const handleClose = () => {
+    if (!isProcessing) {
+      setStep("details");
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
@@ -201,8 +220,17 @@ export const PaymentModal = ({
               )}
             </div>
 
-            <Button onClick={handleComplete} className="w-full" size="lg">
-              <Check className="h-5 w-5 mr-2" />
+            <Button 
+              onClick={handleComplete} 
+              className="w-full" 
+              size="lg"
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              ) : (
+                <Check className="h-5 w-5 mr-2" />
+              )}
               Complete & New Bill
             </Button>
           </div>

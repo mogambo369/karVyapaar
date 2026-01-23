@@ -14,7 +14,243 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      banned_medicines: {
+        Row: {
+          banned_date: string | null
+          created_at: string
+          id: string
+          name: string
+          reason: string
+          source: string
+        }
+        Insert: {
+          banned_date?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          reason: string
+          source?: string
+        }
+        Update: {
+          banned_date?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          reason?: string
+          source?: string
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          loyalty_tier: string | null
+          name: string
+          phone: string | null
+          total_orders: number | null
+          total_spent: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          loyalty_tier?: string | null
+          name: string
+          phone?: string | null
+          total_orders?: number | null
+          total_spent?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          loyalty_tier?: string | null
+          name?: string
+          phone?: string | null
+          total_orders?: number | null
+          total_spent?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          ban_reason: string | null
+          ban_source: string | null
+          barcode: string
+          batch_number: string | null
+          category: string
+          cost_price: number | null
+          created_at: string
+          expiry_date: string | null
+          gst_rate: number | null
+          id: string
+          is_banned: boolean | null
+          min_stock: number | null
+          name: string
+          price: number
+          stock: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          ban_reason?: string | null
+          ban_source?: string | null
+          barcode: string
+          batch_number?: string | null
+          category: string
+          cost_price?: number | null
+          created_at?: string
+          expiry_date?: string | null
+          gst_rate?: number | null
+          id?: string
+          is_banned?: boolean | null
+          min_stock?: number | null
+          name: string
+          price: number
+          stock?: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          ban_reason?: string | null
+          ban_source?: string | null
+          barcode?: string
+          batch_number?: string | null
+          category?: string
+          cost_price?: number | null
+          created_at?: string
+          expiry_date?: string | null
+          gst_rate?: number | null
+          id?: string
+          is_banned?: boolean | null
+          min_stock?: number | null
+          name?: string
+          price?: number
+          stock?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      regulatory_alerts: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          is_read: boolean | null
+          severity: string
+          source: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          is_read?: boolean | null
+          severity?: string
+          source: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_read?: boolean | null
+          severity?: string
+          source?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      sale_items: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          product_name: string
+          quantity: number
+          sale_id: string
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          product_name: string
+          quantity: number
+          sale_id: string
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          product_name?: string
+          quantity?: number
+          sale_id?: string
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          created_at: string
+          customer_name: string | null
+          customer_phone: string | null
+          gst_amount: number
+          id: string
+          invoice_number: string
+          payment_method: string
+          subtotal: number
+          total: number
+        }
+        Insert: {
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          gst_amount: number
+          id?: string
+          invoice_number: string
+          payment_method?: string
+          subtotal: number
+          total: number
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          gst_amount?: number
+          id?: string
+          invoice_number?: string
+          payment_method?: string
+          subtotal?: number
+          total?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

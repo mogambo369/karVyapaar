@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Search, Barcode, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Search, Barcode, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useProducts } from "@/hooks/useProducts";
+import { useBannedMedicines } from "@/hooks/useCompliance";
+import { toast } from "sonner";
 
 export interface Product {
   id: string;
@@ -11,24 +14,19 @@ export interface Product {
   name: string;
   category: string;
   price: number;
+  cost_price: number;
   stock: number;
+  min_stock: number;
   unit: string;
+  gst_rate: number;
+  expiry_date: string | null;
+  batch_number: string | null;
+  is_banned: boolean;
+  ban_reason: string | null;
+  ban_source: string | null;
+  created_at: string;
+  updated_at: string;
 }
-
-const sampleProducts: Product[] = [
-  { id: "1", barcode: "8901234567890", name: "Paracetamol 500mg", category: "Medicine", price: 25, stock: 150, unit: "strip" },
-  { id: "2", barcode: "8901234567891", name: "Crocin Advance", category: "Medicine", price: 45, stock: 80, unit: "strip" },
-  { id: "3", barcode: "8901234567892", name: "Dettol Soap 75g", category: "Personal Care", price: 35, stock: 200, unit: "piece" },
-  { id: "4", barcode: "8901234567893", name: "Tata Salt 1kg", category: "Grocery", price: 28, stock: 50, unit: "pack" },
-  { id: "5", barcode: "8901234567894", name: "Amul Butter 100g", category: "Dairy", price: 56, stock: 30, unit: "pack" },
-  { id: "6", barcode: "8901234567895", name: "Maggi Noodles", category: "Grocery", price: 14, stock: 100, unit: "pack" },
-  { id: "7", barcode: "8901234567896", name: "Colgate Toothpaste 100g", category: "Personal Care", price: 85, stock: 75, unit: "tube" },
-  { id: "8", barcode: "8901234567897", name: "Vim Dishwash Bar", category: "Household", price: 25, stock: 60, unit: "bar" },
-  { id: "9", barcode: "8901234567898", name: "Britannia Good Day", category: "Snacks", price: 30, stock: 90, unit: "pack" },
-  { id: "10", barcode: "8901234567899", name: "Lifebuoy Handwash 200ml", category: "Personal Care", price: 95, stock: 45, unit: "bottle" },
-  { id: "11", barcode: "8901234567900", name: "Ibuprofen 400mg", category: "Medicine", price: 35, stock: 120, unit: "strip" },
-  { id: "12", barcode: "8901234567901", name: "Cetirizine 10mg", category: "Medicine", price: 18, stock: 200, unit: "strip" },
-];
 
 interface ProductSearchProps {
   onAddToCart: (product: Product) => void;
@@ -42,27 +40,18 @@ export const ProductSearch = ({ onAddToCart }: ProductSearchProps) => {
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const filteredProducts = sampleProducts.filter(
-    (product) =>
+  const { data: products = [], isLoading } = useProducts();
+  const { data: bannedMedicines = [] } = useBannedMedicines();
+
+  const bannedNames = bannedMedicines.map((m) => m.name.toLowerCase());
+
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch =
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.barcode.includes(searchQuery) ||
-      product.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleBarcodeSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const product = sampleProducts.find((p) => p.barcode === barcodeInput);
-    if (product) {
-      onAddToCart(product);
-      setBarcodeInput("");
-    }
-  };
-
-  const handleProductSelect = (product: Product) => {
-    onAddToCart(product);
-    setSearchQuery("");
-    setShowResults(false);
-  };
+      product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.barcode.includes(searchQuery);
+    return matchesSearch && !product.is_banned;
+  });
 
   useEffect(() => {
     if (scanMode && barcodeInputRef.current) {
@@ -79,6 +68,38 @@ export const ProductSearch = ({ onAddToCart }: ProductSearchProps) => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleBarcodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const product = products.find((p) => p.barcode === barcodeInput);
+    if (product) {
+      if (
+        product.is_banned ||
+        bannedNames.some((name) => product.name.toLowerCase().includes(name))
+      ) {
+        toast.error(`Cannot add ${product.name} - This product is banned/restricted`);
+        setBarcodeInput("");
+        return;
+      }
+      onAddToCart(product);
+      setBarcodeInput("");
+    } else {
+      toast.error("Product not found");
+    }
+  };
+
+  const handleProductSelect = (product: Product) => {
+    if (
+      product.is_banned ||
+      bannedNames.some((name) => product.name.toLowerCase().includes(name))
+    ) {
+      toast.error(`Cannot add ${product.name} - This product is banned/restricted`);
+      return;
+    }
+    onAddToCart(product);
+    setSearchQuery("");
+    setShowResults(false);
+  };
 
   return (
     <div className="space-y-4">
@@ -128,7 +149,7 @@ export const ProductSearch = ({ onAddToCart }: ProductSearchProps) => {
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            Simulated barcodes: 8901234567890 - 8901234567901
+            Enter barcode to add product. Stock is automatically deducted on sale.
           </p>
         </form>
       ) : (
@@ -165,38 +186,44 @@ export const ProductSearch = ({ onAddToCart }: ProductSearchProps) => {
           {/* Search Results Dropdown */}
           {showResults && searchQuery && (
             <Card className="absolute z-50 w-full mt-2 max-h-64 overflow-y-auto shadow-lg">
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
-                  <button
-                    key={product.id}
-                    onClick={() => handleProductSelect(product)}
-                    className={cn(
-                      "w-full p-3 text-left hover:bg-accent transition-colors flex items-center justify-between border-b last:border-b-0",
-                      product.stock < 10 && "bg-warning/5"
-                    )}
-                  >
-                    <div>
-                      <p className="font-medium text-sm">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {product.category} • {product.barcode}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-primary">₹{product.price}</p>
-                      <p className={cn(
-                        "text-xs",
-                        product.stock < 10 ? "text-destructive" : "text-muted-foreground"
-                      )}>
-                        Stock: {product.stock}
-                      </p>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <p className="p-4 text-center text-muted-foreground">
-                  No products found
-                </p>
-              )}
+              <CardContent className="p-0">
+                {isLoading ? (
+                  <div className="py-6 text-center">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                  </div>
+                ) : filteredProducts.length > 0 ? (
+                  filteredProducts.slice(0, 10).map((product) => (
+                    <button
+                      key={product.id}
+                      onClick={() => handleProductSelect(product)}
+                      className={cn(
+                        "w-full p-3 text-left hover:bg-accent transition-colors flex items-center justify-between border-b last:border-b-0",
+                        product.stock <= product.min_stock && "bg-warning/5"
+                      )}
+                    >
+                      <div>
+                        <p className="font-medium text-sm">{product.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {product.category} • {product.barcode}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-primary">₹{product.price}</p>
+                        <p className={cn(
+                          "text-xs",
+                          product.stock <= product.min_stock ? "text-destructive" : "text-muted-foreground"
+                        )}>
+                          Stock: {product.stock}
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <p className="p-4 text-center text-muted-foreground">
+                    No products found
+                  </p>
+                )}
+              </CardContent>
             </Card>
           )}
         </div>
@@ -204,5 +231,3 @@ export const ProductSearch = ({ onAddToCart }: ProductSearchProps) => {
     </div>
   );
 };
-
-export { sampleProducts };
