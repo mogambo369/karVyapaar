@@ -1,16 +1,21 @@
 import { useState, useCallback } from "react";
 import { Header } from "@/components/dashboard/Header";
-import { ProductSearch, Product } from "@/components/billing/ProductSearch";
+import { ProductSearch } from "@/components/billing/ProductSearch";
 import { Cart, CartItem } from "@/components/billing/Cart";
 import { PaymentModal } from "@/components/billing/PaymentModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CreditCard, Keyboard } from "lucide-react";
+import { CreditCard, Keyboard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useProducts, Product } from "@/hooks/useProducts";
+import { useCreateSale, generateInvoiceNumber } from "@/hooks/useSales";
 
 const Billing = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  const { data: products = [], isLoading } = useProducts();
+  const createSale = useCreateSale();
 
   const handleAddToCart = useCallback((product: Product) => {
     setCartItems((prev) => {
@@ -30,7 +35,7 @@ const Billing = () => {
           id: product.id,
           barcode: product.barcode,
           name: product.name,
-          price: product.price,
+          price: Number(product.price),
           quantity: 1,
           unit: product.unit,
         },
@@ -56,10 +61,41 @@ const Billing = () => {
     toast.info("Cart cleared");
   }, []);
 
-  const handlePaymentComplete = useCallback(() => {
-    setCartItems([]);
-    setShowPaymentModal(false);
-  }, []);
+  const handlePaymentComplete = useCallback(
+    async (paymentMethod: string, customerName?: string, customerPhone?: string) => {
+      const subtotal = cartItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+      const gst = subtotal * 0.18;
+      const total = subtotal + gst;
+
+      try {
+        await createSale.mutateAsync({
+          invoice_number: generateInvoiceNumber(),
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          subtotal,
+          gst_amount: gst,
+          total,
+          payment_method: paymentMethod,
+          items: cartItems.map((item) => ({
+            product_id: item.id,
+            product_name: item.name,
+            quantity: item.quantity,
+            unit_price: item.price,
+            total_price: item.price * item.quantity,
+          })),
+        });
+
+        setCartItems([]);
+        setShowPaymentModal(false);
+      } catch (error) {
+        // Error handled by mutation
+      }
+    },
+    [cartItems, createSale]
+  );
 
   const subtotal = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -67,6 +103,9 @@ const Billing = () => {
   );
   const gst = subtotal * 0.18;
   const total = subtotal + gst;
+
+  // Get popular items from actual products
+  const popularItems = products.slice(0, 4);
 
   return (
     <div className="min-h-screen bg-background">
@@ -101,20 +140,20 @@ const Billing = () => {
                   <div className="p-3 bg-muted/50 rounded-lg">
                     <p className="font-medium">Barcode Mode</p>
                     <p className="text-muted-foreground">
-                      Switch to barcode mode and scan products directly. Use simulated barcodes for testing.
+                      Switch to barcode mode and scan products directly. Stock is automatically deducted.
                     </p>
                   </div>
                   <div className="p-3 bg-muted/50 rounded-lg">
                     <p className="font-medium">Search Mode</p>
                     <p className="text-muted-foreground">
-                      Search by product name, category, or barcode number. Click to add to cart.
+                      Search by product name, category, or barcode. Banned products are automatically blocked.
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Sample Products Quick Add */}
+            {/* Popular Items Quick Add */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg font-semibold">
@@ -122,24 +161,25 @@ const Billing = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {[
-                    { id: "1", name: "Paracetamol", price: 25, barcode: "8901234567890", stock: 150, unit: "strip", category: "Medicine" },
-                    { id: "3", name: "Dettol Soap", price: 35, barcode: "8901234567892", stock: 200, unit: "piece", category: "Personal Care" },
-                    { id: "6", name: "Maggi", price: 14, barcode: "8901234567895", stock: 100, unit: "pack", category: "Grocery" },
-                    { id: "5", name: "Amul Butter", price: 56, barcode: "8901234567894", stock: 30, unit: "pack", category: "Dairy" },
-                  ].map((product) => (
-                    <Button
-                      key={product.id}
-                      variant="outline"
-                      className="h-auto py-3 flex-col"
-                      onClick={() => handleAddToCart(product)}
-                    >
-                      <span className="font-medium">{product.name}</span>
-                      <span className="text-xs text-primary">₹{product.price}</span>
-                    </Button>
-                  ))}
-                </div>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {popularItems.map((product) => (
+                      <Button
+                        key={product.id}
+                        variant="outline"
+                        className="h-auto py-3 flex-col"
+                        onClick={() => handleAddToCart(product)}
+                      >
+                        <span className="font-medium">{product.name}</span>
+                        <span className="text-xs text-primary">₹{product.price}</span>
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -159,11 +199,15 @@ const Billing = () => {
               {/* Checkout Button */}
               <Button
                 onClick={() => setShowPaymentModal(true)}
-                disabled={cartItems.length === 0}
+                disabled={cartItems.length === 0 || createSale.isPending}
                 className="w-full h-14 text-lg"
                 size="lg"
               >
-                <CreditCard className="h-5 w-5 mr-2" />
+                {createSale.isPending ? (
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                ) : (
+                  <CreditCard className="h-5 w-5 mr-2" />
+                )}
                 Checkout • ₹{total.toFixed(2)}
               </Button>
             </div>
