@@ -3,9 +3,10 @@ import { Header } from "@/components/dashboard/Header";
 import { ProductSearch } from "@/components/billing/ProductSearch";
 import { Cart, CartItem } from "@/components/billing/Cart";
 import { PaymentModal } from "@/components/billing/PaymentModal";
+import { VoiceCommand } from "@/components/ai/VoiceCommand";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CreditCard, Keyboard, Loader2 } from "lucide-react";
+import { CreditCard, Keyboard, Loader2, Mic } from "lucide-react";
 import { toast } from "sonner";
 import { useProducts, Product } from "@/hooks/useProducts";
 import { useCreateSale, generateInvoiceNumber } from "@/hooks/useSales";
@@ -42,6 +43,40 @@ const Billing = () => {
       ];
     });
   }, []);
+
+  // Voice command handler to add items to cart by name
+  const handleVoiceAddToCart = useCallback((item: { name: string; quantity: number; price?: number }) => {
+    const matchedProduct = products.find(p => 
+      p.name.toLowerCase().includes(item.name.toLowerCase()) ||
+      item.name.toLowerCase().includes(p.name.toLowerCase())
+    );
+
+    if (matchedProduct) {
+      setCartItems((prev) => {
+        const existingItem = prev.find((i) => i.id === matchedProduct.id);
+        if (existingItem) {
+          return prev.map((i) =>
+            i.id === matchedProduct.id
+              ? { ...i, quantity: i.quantity + item.quantity }
+              : i
+          );
+        }
+        return [
+          ...prev,
+          {
+            id: matchedProduct.id,
+            barcode: matchedProduct.barcode,
+            name: matchedProduct.name,
+            price: Number(matchedProduct.price),
+            quantity: item.quantity,
+            unit: matchedProduct.unit,
+          },
+        ];
+      });
+    } else {
+      toast.warning(`Product "${item.name}" not found in inventory`);
+    }
+  }, [products]);
 
   const handleUpdateQuantity = useCallback((id: string, quantity: number) => {
     setCartItems((prev) =>
@@ -127,6 +162,25 @@ const Billing = () => {
               </CardContent>
             </Card>
 
+            {/* Voice Input & Tips */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Mic className="h-5 w-5 text-primary" />
+                  Voice Input
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  <VoiceCommand onAddToCart={handleVoiceAddToCart} />
+                  <div className="flex-1 text-sm text-muted-foreground">
+                    <p className="font-medium mb-1">Speak to add items</p>
+                    <p>Say "Bill mein 2 packet doodh dalo" or "Add 5 kg rice to bill"</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Keyboard Shortcuts */}
             <Card>
               <CardHeader className="pb-3">
@@ -140,13 +194,13 @@ const Billing = () => {
                   <div className="p-3 bg-muted/50 rounded-lg">
                     <p className="font-medium">Barcode Mode</p>
                     <p className="text-muted-foreground">
-                      Switch to barcode mode and scan products directly. Stock is automatically deducted.
+                      Switch to barcode mode and scan products directly.
                     </p>
                   </div>
                   <div className="p-3 bg-muted/50 rounded-lg">
-                    <p className="font-medium">Search Mode</p>
+                    <p className="font-medium">Voice Mode</p>
                     <p className="text-muted-foreground">
-                      Search by product name, category, or barcode. Banned products are automatically blocked.
+                      Speak in Hindi, Marathi, Gujarati, or English to add items.
                     </p>
                   </div>
                 </div>
