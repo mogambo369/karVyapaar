@@ -1,1 +1,10 @@
 project_id = "sxaeirisbbgzisyqveoc"
+
+[functions.ai-scan-bill]
+verify_jwt = false
+
+[functions.ai-smart-reorder]
+verify_jwt = false
+
+[functions.ai-voice-command]
+verify_jwt = false
