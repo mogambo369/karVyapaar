@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { label: "Dashboard", href: "/" },
   { label: "Billing", href: "/billing" },
-  { label: "Inventory", href: "#" },
+  { label: "Inventory", href: "/inventory" },
   { label: "Reports", href: "/reports" },
   { label: "Compliance", href: "/compliance" },
 ];
