@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { cn } from "@/lib/utils";
 
 const salesData = [
   { month: "Jan", sales: 42000 },
@@ -24,15 +25,24 @@ const salesData = [
   { month: "Dec", sales: 82000 },
 ];
 
-export const SalesChart = () => {
+interface SalesChartProps {
+  className?: string;
+}
+
+export const SalesChart = ({ className }: SalesChartProps) => {
   return (
-    <Card>
+    <Card className={cn(
+      "group overflow-hidden transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1",
+      className
+    )}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-semibold">Sales Trends</CardTitle>
+        <CardTitle className="text-lg font-semibold transition-colors group-hover:text-primary">
+          Sales Trends
+        </CardTitle>
         <p className="text-sm text-muted-foreground">Monthly sales performance</p>
       </CardHeader>
       <CardContent>
-        <div className="h-[280px]">
+        <div className="h-[280px] transition-transform duration-500 group-hover:scale-[1.02] origin-center">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={salesData}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -58,6 +68,9 @@ export const SalesChart = () => {
                 dataKey="sales"
                 fill="hsl(var(--chart-2))"
                 radius={[4, 4, 0, 0]}
+                animationBegin={0}
+                animationDuration={1500}
+                animationEasing="ease-out"
               />
             </BarChart>
           </ResponsiveContainer>
