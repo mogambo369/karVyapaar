@@ -5,6 +5,7 @@ import { ProfitChart } from "@/components/dashboard/ProfitChart";
 import { ComplianceCenter } from "@/components/dashboard/ComplianceCenter";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
+import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { Button } from "@/components/ui/button";
 import {
   IndianRupee,
@@ -95,108 +96,134 @@ const Index = () => {
       <section className="relative -mt-8 z-20">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-card rounded-xl p-6 shadow-lg border border-border hover:shadow-xl transition-shadow">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-primary text-primary-foreground">
-                  <ShoppingCart className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-card-foreground">Billing Service</h3>
-                  <p className="text-sm text-muted-foreground">GST-compliant invoicing</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-card rounded-xl p-6 shadow-lg border border-border hover:shadow-xl transition-shadow">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-primary text-primary-foreground">
-                  <Package className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-card-foreground">Inventory Control</h3>
-                  <p className="text-sm text-muted-foreground">Smart stock management</p>
+            <AnimatedSection animation="stagger" staggerIndex={0}>
+              <div className="bg-card rounded-xl p-6 shadow-lg border border-border hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-primary text-primary-foreground">
+                    <ShoppingCart className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-card-foreground">Billing Service</h3>
+                    <p className="text-sm text-muted-foreground">GST-compliant invoicing</p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="bg-primary rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-primary-foreground/20 text-primary-foreground">
-                  <TrendingUp className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-primary-foreground">Analytics</h3>
-                  <p className="text-sm text-primary-foreground/80">Business insights</p>
+            </AnimatedSection>
+            <AnimatedSection animation="stagger" staggerIndex={1}>
+              <div className="bg-card rounded-xl p-6 shadow-lg border border-border hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-primary text-primary-foreground">
+                    <Package className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-card-foreground">Inventory Control</h3>
+                    <p className="text-sm text-muted-foreground">Smart stock management</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </AnimatedSection>
+            <AnimatedSection animation="stagger" staggerIndex={2}>
+              <div className="bg-primary rounded-xl p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-primary-foreground/20 text-primary-foreground">
+                    <TrendingUp className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-primary-foreground">Analytics</h3>
+                    <p className="text-sm text-primary-foreground/80">Business insights</p>
+                  </div>
+                </div>
+              </div>
+            </AnimatedSection>
           </div>
         </div>
       </section>
       
       <main className="container mx-auto px-4 py-12 space-y-6">
         {/* Welcome Banner */}
-        <div className="bg-gradient-to-r from-primary/10 via-accent to-primary/5 rounded-xl p-6 border border-primary/20">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-bold text-foreground">
-                Welcome back, Rajesh!
-              </h2>
-              <p className="text-muted-foreground mt-1">
-                Your store is performing 12% better than last week. Keep up the great work!
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1 px-3 py-1 bg-success/10 text-success rounded-full">
-                <span className="w-2 h-2 bg-success rounded-full animate-pulse" />
-                Online Mode
-              </span>
+        <AnimatedSection animation="fade-up">
+          <div className="bg-gradient-to-r from-primary/10 via-accent to-primary/5 rounded-xl p-6 border border-primary/20">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-foreground">
+                  Welcome back, Rajesh!
+                </h2>
+                <p className="text-muted-foreground mt-1">
+                  Your store is performing 12% better than last week. Keep up the great work!
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1 px-3 py-1 bg-success/10 text-success rounded-full">
+                  <span className="w-2 h-2 bg-success rounded-full animate-pulse" />
+                  Online Mode
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        </AnimatedSection>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard
-            title="Today's Sales"
-            value="₹24,500"
-            icon={IndianRupee}
-            trend={{ value: 12, isPositive: true }}
-            variant="primary"
-          />
-          <StatsCard
-            title="Orders"
-            value="47"
-            icon={ShoppingCart}
-            trend={{ value: 8, isPositive: true }}
-          />
-          <StatsCard
-            title="Low Stock Items"
-            value="12"
-            icon={Package}
-            variant="warning"
-          />
-          <StatsCard
-            title="Monthly Profit"
-            value="₹1.2L"
-            icon={TrendingUp}
-            trend={{ value: 15, isPositive: true }}
-            variant="success"
-          />
+          <AnimatedSection animation="stagger" staggerIndex={0}>
+            <StatsCard
+              title="Today's Sales"
+              value="₹24,500"
+              icon={IndianRupee}
+              trend={{ value: 12, isPositive: true }}
+              variant="primary"
+            />
+          </AnimatedSection>
+          <AnimatedSection animation="stagger" staggerIndex={1}>
+            <StatsCard
+              title="Orders"
+              value="47"
+              icon={ShoppingCart}
+              trend={{ value: 8, isPositive: true }}
+            />
+          </AnimatedSection>
+          <AnimatedSection animation="stagger" staggerIndex={2}>
+            <StatsCard
+              title="Low Stock Items"
+              value="12"
+              icon={Package}
+              variant="warning"
+            />
+          </AnimatedSection>
+          <AnimatedSection animation="stagger" staggerIndex={3}>
+            <StatsCard
+              title="Monthly Profit"
+              value="₹1.2L"
+              icon={TrendingUp}
+              trend={{ value: 15, isPositive: true }}
+              variant="success"
+            />
+          </AnimatedSection>
         </div>
 
         {/* Quick Actions */}
-        <QuickActions />
+        <AnimatedSection animation="fade-up" delay={100}>
+          <QuickActions />
+        </AnimatedSection>
 
         {/* Charts Row */}
         <div className="grid lg:grid-cols-2 gap-6">
-          <SalesChart />
-          <ProfitChart />
+          <AnimatedSection animation="fade-left">
+            <SalesChart />
+          </AnimatedSection>
+          <AnimatedSection animation="fade-right">
+            <ProfitChart />
+          </AnimatedSection>
         </div>
 
         {/* Recent Transactions */}
-        <RecentTransactions />
+        <AnimatedSection animation="fade-up">
+          <RecentTransactions />
+        </AnimatedSection>
 
         {/* Compliance Center */}
-        <ComplianceCenter />
+        <AnimatedSection animation="scale">
+          <ComplianceCenter />
+        </AnimatedSection>
 
         {/* Footer */}
         <footer className="text-center py-6 text-sm text-muted-foreground border-t border-border">

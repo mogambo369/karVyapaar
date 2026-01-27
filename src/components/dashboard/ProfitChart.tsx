@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { cn } from "@/lib/utils";
 
 const profitData = [
   { month: "Jan", profit: 12000 },
@@ -24,15 +25,24 @@ const profitData = [
   { month: "Dec", profit: 30000 },
 ];
 
-export const ProfitChart = () => {
+interface ProfitChartProps {
+  className?: string;
+}
+
+export const ProfitChart = ({ className }: ProfitChartProps) => {
   return (
-    <Card>
+    <Card className={cn(
+      "group overflow-hidden transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1",
+      className
+    )}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-semibold">Profit Analysis</CardTitle>
+        <CardTitle className="text-lg font-semibold transition-colors group-hover:text-primary">
+          Profit Analysis
+        </CardTitle>
         <p className="text-sm text-muted-foreground">Monthly profit trends</p>
       </CardHeader>
       <CardContent>
-        <div className="h-[280px]">
+        <div className="h-[280px] transition-transform duration-500 group-hover:scale-[1.02] origin-center">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={profitData}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -60,6 +70,9 @@ export const ProfitChart = () => {
                 stroke="hsl(var(--chart-2))"
                 strokeWidth={2}
                 dot={{ fill: "hsl(var(--chart-2))", strokeWidth: 2 }}
+                animationBegin={0}
+                animationDuration={1500}
+                animationEasing="ease-out"
               />
             </LineChart>
           </ResponsiveContainer>
