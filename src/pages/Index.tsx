@@ -5,10 +5,11 @@ import { ProfitChart } from "@/components/dashboard/ProfitChart";
 import { ComplianceCenter } from "@/components/dashboard/ComplianceCenter";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
+import { Testimonials } from "@/components/dashboard/Testimonials";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { Button } from "@/components/ui/button";
 import {
-  IndianRupee,
+  DollarSign,
   ShoppingCart,
   Package,
   TrendingUp,
@@ -66,7 +67,7 @@ const Index = () => {
             
             <p className="text-lg md:text-xl text-muted-foreground animate-slide-up" style={{ animationDelay: '0.2s' }}>
               Manage inventory, billing, and compliance effortlessly. 
-              Built for Indian shopkeepers with voice commands and offline support.
+              Built for businesses with voice commands and offline support.
             </p>
             
             <div className="flex flex-wrap gap-4 pt-4 animate-slide-up" style={{ animationDelay: '0.4s' }}>
@@ -167,8 +168,8 @@ const Index = () => {
           <AnimatedSection animation="stagger" staggerIndex={0}>
             <StatsCard
               title="Today's Sales"
-              value="₹24,500"
-              icon={IndianRupee}
+              value="$24,500"
+              icon={DollarSign}
               trend={{ value: 12, isPositive: true }}
               variant="primary"
             />
@@ -192,7 +193,7 @@ const Index = () => {
           <AnimatedSection animation="stagger" staggerIndex={3}>
             <StatsCard
               title="Monthly Profit"
-              value="₹1.2L"
+              value="$12K"
               icon={TrendingUp}
               trend={{ value: 15, isPositive: true }}
               variant="success"
@@ -225,11 +226,16 @@ const Index = () => {
           <ComplianceCenter />
         </AnimatedSection>
 
+        {/* Testimonials */}
+        <AnimatedSection animation="fade-up">
+          <Testimonials />
+        </AnimatedSection>
+
         {/* Footer */}
         <footer className="text-center py-6 text-sm text-muted-foreground border-t border-border">
           <p>
             karVyapaar - Your Digital Business Partner | Works offline • 
-            Supports voice input • Built for India
+            Supports voice input • Built for global businesses
           </p>
         </footer>
       </main>
