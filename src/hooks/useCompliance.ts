@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { BannedMedicineSchema, BannedMedicineInput } from "@/lib/validations";
+import { z } from "zod";
 
 export interface BannedMedicine {
   id: string;
@@ -41,6 +43,16 @@ export const useAddBannedMedicine = () => {
 
   return useMutation({
     mutationFn: async (medicine: Omit<BannedMedicine, "id" | "created_at">) => {
+      // Validate the input
+      try {
+        BannedMedicineSchema.parse(medicine);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(error.errors[0]?.message || "Invalid medicine data");
+        }
+        throw error;
+      }
+
       const { data, error } = await supabase
         .from("banned_medicines")
         .insert(medicine)
@@ -65,6 +77,11 @@ export const useDeleteBannedMedicine = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Validate UUID format
+      if (!id || typeof id !== "string" || id.length < 32) {
+        throw new Error("Invalid medicine ID");
+      }
+
       const { error } = await supabase
         .from("banned_medicines")
         .delete()
@@ -102,6 +119,11 @@ export const useMarkAlertRead = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Validate UUID format
+      if (!id || typeof id !== "string" || id.length < 32) {
+        throw new Error("Invalid alert ID");
+      }
+
       const { error } = await supabase
         .from("regulatory_alerts")
         .update({ is_read: true })

@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface LowStockItem {
@@ -15,10 +16,39 @@ interface LowStockItem {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims) {
+      console.error("Auth verification failed:", claimsError);
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = claimsData.claims.sub;
+    console.log("Authenticated user:", userId);
+
     const { lowStockItems, distributorName } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
@@ -26,7 +56,15 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    if (!lowStockItems || lowStockItems.length === 0) {
+    // Validate input
+    if (!lowStockItems || !Array.isArray(lowStockItems)) {
+      return new Response(JSON.stringify({ error: "Invalid low stock items" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (lowStockItems.length === 0) {
       return new Response(JSON.stringify({ 
         message: "No low stock items to reorder.",
         whatsappMessage: ""
@@ -35,11 +73,24 @@ serve(async (req) => {
       });
     }
 
-    console.log("Generating reorder message for", lowStockItems.length, "items");
+    // Limit array size to prevent abuse
+    if (lowStockItems.length > 100) {
+      return new Response(JSON.stringify({ error: "Too many items (max 100)" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log("Generating reorder message for", lowStockItems.length, "items for user:", userId);
 
     const itemsList = lowStockItems.map((item: LowStockItem) => 
       `- ${item.name}: Current stock ${item.stock} ${item.unit}, need minimum ${item.min_stock} ${item.unit}`
     ).join("\n");
+
+    // Sanitize distributor name
+    const safeDistributorName = distributorName 
+      ? String(distributorName).slice(0, 200).replace(/[<>]/g, '') 
+      : 'Supplier';
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -52,10 +103,10 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a helpful assistant for Indian retail shopkeepers. Generate professional WhatsApp order messages for distributors.
+            content: `You are a helpful assistant for retail shopkeepers. Generate professional WhatsApp order messages for distributors.
 
 The message should be:
-- Polite and professional in Hinglish (mix of Hindi and English, written in Roman script)
+- Polite and professional
 - Include all items with suggested order quantities (roughly double the shortage)
 - Ask for delivery by tomorrow or day after
 - Include a greeting and closing
@@ -69,12 +120,12 @@ Format the output as JSON:
           },
           {
             role: "user",
-            content: `Generate a WhatsApp order message for distributor "${distributorName || 'Supplier Ji'}".
+            content: `Generate a WhatsApp order message for distributor "${safeDistributorName}".
 
 Low stock items that need reordering:
 ${itemsList}
 
-Create a professional order message in Hinglish.`
+Create a professional order message.`
           }
         ],
         max_tokens: 1000,
@@ -102,7 +153,7 @@ Create a professional order message in Hinglish.`
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
     
-    console.log("AI response:", content);
+    console.log("AI response received for user:", userId);
 
     let parsed;
     try {

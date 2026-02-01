@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ScanBillInputSchema, VoiceCommandInputSchema, ReorderInputSchema } from "@/lib/validations";
+import { z } from "zod";
 
 interface StockEntry {
   name: string;
@@ -41,19 +43,31 @@ export const useAIFeatures = () => {
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [isGeneratingReorder, setIsGeneratingReorder] = useState(false);
 
+  const getAuthToken = async (): Promise<string | null> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
+  };
+
   const scanBill = useCallback(async (imageBase64: string): Promise<ScanBillResult> => {
     setIsScanning(true);
     try {
+      // Validate input
+      const validated = ScanBillInputSchema.parse({ imageBase64 });
+      
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-scan-bill`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ imageBase64 }),
+          body: JSON.stringify({ imageBase64: validated.imageBase64 }),
         }
       );
 
@@ -72,7 +86,11 @@ export const useAIFeatures = () => {
       
       return result;
     } catch (error) {
-      console.error("Error scanning bill:", error);
+      if (error instanceof z.ZodError) {
+        const message = error.errors[0]?.message || "Invalid input";
+        toast.error(message);
+        return { entries: [], error: message };
+      }
       toast.error(error instanceof Error ? error.message : "Failed to scan bill");
       return { entries: [], error: error instanceof Error ? error.message : "Unknown error" };
     } finally {
@@ -86,16 +104,23 @@ export const useAIFeatures = () => {
   ): Promise<VoiceCommandResult> => {
     setIsProcessingVoice(true);
     try {
+      // Validate input
+      const validated = VoiceCommandInputSchema.parse({ transcript, language });
+      
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-voice-command`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ transcript, language }),
+          body: JSON.stringify({ transcript: validated.transcript, language: validated.language }),
         }
       );
 
@@ -114,7 +139,18 @@ export const useAIFeatures = () => {
       
       return result;
     } catch (error) {
-      console.error("Error processing voice command:", error);
+      if (error instanceof z.ZodError) {
+        const message = error.errors[0]?.message || "Invalid input";
+        toast.error(message);
+        return {
+          action: "ERROR",
+          items: [],
+          confidence: 0,
+          originalText: transcript,
+          interpretation: message,
+          error: message
+        };
+      }
       toast.error(error instanceof Error ? error.message : "Failed to process voice");
       return {
         action: "ERROR",
@@ -141,16 +177,26 @@ export const useAIFeatures = () => {
   ): Promise<ReorderResult> => {
     setIsGeneratingReorder(true);
     try {
+      // Validate input
+      const validated = ReorderInputSchema.parse({ lowStockItems, distributorName });
+      
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-smart-reorder`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ lowStockItems, distributorName }),
+          body: JSON.stringify({ 
+            lowStockItems: validated.lowStockItems, 
+            distributorName: validated.distributorName 
+          }),
         }
       );
 
@@ -167,7 +213,11 @@ export const useAIFeatures = () => {
       
       return result;
     } catch (error) {
-      console.error("Error generating reorder message:", error);
+      if (error instanceof z.ZodError) {
+        const message = error.errors[0]?.message || "Invalid input";
+        toast.error(message);
+        return { whatsappMessage: "", summary: "", error: message };
+      }
       toast.error(error instanceof Error ? error.message : "Failed to generate message");
       return {
         whatsappMessage: "",

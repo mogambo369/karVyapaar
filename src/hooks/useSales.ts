@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { SaleSchema } from "@/lib/validations";
+import { z } from "zod";
 
 export interface Sale {
   id: string;
@@ -142,6 +144,16 @@ export const useCreateSale = () => {
 
   return useMutation({
     mutationFn: async (input: CreateSaleInput) => {
+      // Validate the sale data
+      try {
+        SaleSchema.parse(input);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(error.errors[0]?.message || "Invalid sale data");
+        }
+        throw error;
+      }
+
       // Create sale
       const { data: sale, error: saleError } = await supabase
         .from("sales")
