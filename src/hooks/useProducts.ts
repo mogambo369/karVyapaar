@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ProductSchema, ProductInput } from "@/lib/validations";
+import { z } from "zod";
 
 export interface Product {
   id: string;
@@ -97,7 +99,18 @@ export const useUpdateProduct = () => {
     mutationFn: async ({
       id,
       ...updates
-    }: Partial<Product> & { id: string }) => {
+    }: Partial<ProductInput> & { id: string }) => {
+      // Validate the update data (partial validation)
+      const partialSchema = ProductSchema.partial();
+      try {
+        partialSchema.parse(updates);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(error.errors[0]?.message || "Invalid product data");
+        }
+        throw error;
+      }
+
       const { data, error } = await supabase
         .from("products")
         .update(updates)
@@ -123,6 +136,16 @@ export const useAddProduct = () => {
 
   return useMutation({
     mutationFn: async (product: Omit<Product, "id" | "created_at" | "updated_at">) => {
+      // Validate the product data
+      try {
+        ProductSchema.parse(product);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(error.errors[0]?.message || "Invalid product data");
+        }
+        throw error;
+      }
+
       const { data, error } = await supabase
         .from("products")
         .insert(product)

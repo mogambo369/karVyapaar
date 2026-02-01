@@ -1,16 +1,46 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims) {
+      console.error("Auth verification failed:", claimsError);
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = claimsData.claims.sub;
+    console.log("Authenticated user:", userId);
+
     const { imageBase64 } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
@@ -18,11 +48,23 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    if (!imageBase64) {
-      throw new Error("Image data is required");
+    // Validate input
+    if (!imageBase64 || typeof imageBase64 !== 'string') {
+      return new Response(JSON.stringify({ error: "Image data is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    console.log("Processing handwritten bill image...");
+    // Limit image size (10MB)
+    if (imageBase64.length > 10_000_000) {
+      return new Response(JSON.stringify({ error: "Image too large (max 10MB)" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log("Processing handwritten bill image for user:", userId);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -35,7 +77,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a stock entry assistant for an Indian retail shop. Extract product information from handwritten bills, notes, or receipts.
+            content: `You are a stock entry assistant for a retail shop. Extract product information from handwritten bills, notes, or receipts.
 
 Your task is to parse the image and extract stock entries in this exact JSON format:
 {
@@ -51,9 +93,9 @@ Your task is to parse the image and extract stock entries in this exact JSON for
   "notes": "Any additional notes or unclear items"
 }
 
-Handle Hindi, Marathi, and Gujarati text. Translate product names to English.
+Handle multiple languages. Translate product names to English.
 If handwriting is unclear, make your best guess and note it.
-Common Indian products: dal, rice (chawal), atta, sugar (cheeni), oil (tel), salt (namak), spices (masala).`
+Common products: rice, flour, sugar, oil, salt, spices.`
           },
           {
             role: "user",
@@ -96,7 +138,7 @@ Common Indian products: dal, rice (chawal), atta, sugar (cheeni), oil (tel), sal
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
     
-    console.log("AI response:", content);
+    console.log("AI response received for user:", userId);
 
     // Parse the JSON from the response
     let parsed;
