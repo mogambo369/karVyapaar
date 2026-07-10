@@ -172,18 +172,14 @@ export const useAIFeatures = () => {
       // Validate input
       const validated = ReorderInputSchema.parse({ lowStockItems, distributorName });
       
-      const token = await getAuthToken();
-      if (!token) {
-        throw new Error("Authentication required");
-      }
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-smart-reorder`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
           },
           body: JSON.stringify({ 
             lowStockItems: validated.lowStockItems, 
@@ -191,6 +187,7 @@ export const useAIFeatures = () => {
           }),
         }
       );
+
 
       if (!response.ok) {
         const errorData = await response.json();
