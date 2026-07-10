@@ -43,21 +43,14 @@ export const useAIFeatures = () => {
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [isGeneratingReorder, setIsGeneratingReorder] = useState(false);
 
-  const getAuthToken = async (): Promise<string | null> => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token ?? null;
-  };
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
   const scanBill = useCallback(async (imageBase64: string): Promise<ScanBillResult> => {
     setIsScanning(true);
     try {
       // Validate input
       const validated = ScanBillInputSchema.parse({ imageBase64 });
-      
-      const token = await getAuthToken();
-      if (!token) {
-        throw new Error("Authentication required");
-      }
+
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-scan-bill`,
