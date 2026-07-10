@@ -43,21 +43,14 @@ export const useAIFeatures = () => {
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [isGeneratingReorder, setIsGeneratingReorder] = useState(false);
 
-  const getAuthToken = async (): Promise<string | null> => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token ?? null;
-  };
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
   const scanBill = useCallback(async (imageBase64: string): Promise<ScanBillResult> => {
     setIsScanning(true);
     try {
       // Validate input
       const validated = ScanBillInputSchema.parse({ imageBase64 });
-      
-      const token = await getAuthToken();
-      if (!token) {
-        throw new Error("Authentication required");
-      }
+
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-scan-bill`,
@@ -65,7 +58,9 @@ export const useAIFeatures = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
+
           },
           body: JSON.stringify({ imageBase64: validated.imageBase64 }),
         }
@@ -107,22 +102,19 @@ export const useAIFeatures = () => {
       // Validate input
       const validated = VoiceCommandInputSchema.parse({ transcript, language });
       
-      const token = await getAuthToken();
-      if (!token) {
-        throw new Error("Authentication required");
-      }
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-voice-command`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
           },
           body: JSON.stringify({ transcript: validated.transcript, language: validated.language }),
         }
       );
+
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -180,18 +172,14 @@ export const useAIFeatures = () => {
       // Validate input
       const validated = ReorderInputSchema.parse({ lowStockItems, distributorName });
       
-      const token = await getAuthToken();
-      if (!token) {
-        throw new Error("Authentication required");
-      }
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-smart-reorder`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
           },
           body: JSON.stringify({ 
             lowStockItems: validated.lowStockItems, 
@@ -199,6 +187,7 @@ export const useAIFeatures = () => {
           }),
         }
       );
+
 
       if (!response.ok) {
         const errorData = await response.json();
